@@ -64,6 +64,8 @@
         .metric-card.subsidio { border-left-color: #007C27; }
         .metric-card.pro-soluto { border-left-color: #00512A; }
         .metric-card.pos-obra { border-left-color: #007C27; }
+        .metric-card.venda-financiamento { border-left-color: #00512A; }
+        .metric-card.venda-direta { border-left-color: #007C27; }
         .metric-title {
             font-size: 0.9em; color: #007C27; text-transform: uppercase;
             letter-spacing: 1px; margin-bottom: 10px; font-weight: 600;
@@ -273,6 +275,16 @@ select.ms-hidden{display:none !important;}
                     <div class="metric-value" id="mediaSinalMedio">--</div>
                     <div class="metric-subtitle">Valor médio de sinal</div>
                 </div>
+                <div class="metric-card venda-financiamento">
+                    <div class="metric-title">% Venda Financiamento</div>
+                    <div class="metric-value" id="percentVendaFinanciamento">--</div>
+                    <div class="metric-subtitle">Percentual de vendas financiadas</div>
+                </div>
+                <div class="metric-card venda-direta">
+                    <div class="metric-title">% Venda Direta</div>
+                    <div class="metric-value" id="percentVendaDireta">--</div>
+                    <div class="metric-subtitle">Percentual de vendas diretas</div>
+                </div>
             </div>
 
             <div class="summary">
@@ -344,11 +356,13 @@ select.ms-hidden{display:none !important;}
         }
 
         function calcularMetricas(dados) {
-            if (!dados.length) return {fin: 0, comp: 0, qtd: 0, sub: 0, pro: 0, pos: 0, percPro: 0, percPos: 0, renda: 0, sinal: 0};
+            if (!dados.length) return {fin: 0, comp: 0, qtd: 0, sub: 0, pro: 0, pos: 0, percPro: 0, percPos: 0, renda: 0, sinal: 0, percVendaFinanciamento: 0, percVendaDireta: 0};
             
             // Médias simples (aritméticas) dos registros filtrados
             var soma = {fin: 0, comp: 0, qtd: 0, sub: 0, pro: 0, pos: 0, percPro: 0, percPos: 0, renda: 0, sinal: 0};
             var count = {fin: 0, comp: 0, qtd: 0, sub: 0, pro: 0, pos: 0, percPro: 0, percPos: 0, renda: 0, sinal: 0};
+            var vendaFinanciamento = 0;
+            var vendaDireta = 0;
             
             for (var i = 0; i < dados.length; i++) {
                 var item = dados[i];
@@ -363,7 +377,18 @@ select.ms-hidden{display:none !important;}
                 if (item.percPos !== null && item.percPos !== undefined) { soma.percPos += item.percPos; count.percPos++; }
                 if (item.renda !== null && item.renda !== undefined) { soma.renda += item.renda; count.renda++; }
                 if (item.Sinal !== null && item.Sinal !== undefined) { soma.sinal += item.Sinal; count.sinal++; }
+                
+                // Contar vendas por tipo de financiamento
+                if (item.tipoFinanciamento === 'Financiada') {
+                    vendaFinanciamento++;
+                } else if (item.tipoFinanciamento === 'Direta') {
+                    vendaDireta++;
+                }
             }
+            
+            var totalVendas = vendaFinanciamento + vendaDireta;
+            var percVendaFinanciamento = totalVendas > 0 ? (vendaFinanciamento / totalVendas) : 0;
+            var percVendaDireta = totalVendas > 0 ? (vendaDireta / totalVendas) : 0;
             
             return {
                 fin: count.fin > 0 ? soma.fin / count.fin : 0,
@@ -375,7 +400,9 @@ select.ms-hidden{display:none !important;}
                 percPro: count.percPro > 0 ? soma.percPro / count.percPro : 0,
                 percPos: count.percPos > 0 ? soma.percPos / count.percPos : 0,
                 renda: count.renda > 0 ? soma.renda / count.renda : 0,
-                sinal: count.sinal > 0 ? soma.sinal / count.sinal : 0
+                sinal: count.sinal > 0 ? soma.sinal / count.sinal : 0,
+                percVendaFinanciamento: percVendaFinanciamento,
+                percVendaDireta: percVendaDireta
             };
         }
 
@@ -430,6 +457,11 @@ select.ms-hidden{display:none !important;}
 
             document.getElementById('mediaSinalMedio').textContent = 
                 metricas.sinal > 0 ? 'R$ ' + Math.round(metricas.sinal).toLocaleString('pt-BR') : '--';
+            
+            document.getElementById('percentVendaFinanciamento').textContent = 
+                metricas.percVendaFinanciamento > 0 ? (metricas.percVendaFinanciamento * 100).toFixed(1) + '%' : '--';
+            document.getElementById('percentVendaDireta').textContent = 
+                metricas.percVendaDireta > 0 ? (metricas.percVendaDireta * 100).toFixed(1) + '%' : '--';
 
             document.getElementById('totalRegistros').textContent = dadosFiltrados.length;
             var filtrosAtivos = 0;
